@@ -104,7 +104,15 @@ body.typing.fade .hints { opacity: 0.12; }
 .text .bad, .text p.done .bad { color: var(--err); background: var(--err-bg); border-radius: 2px; }
 .text .nl { color: var(--muted); opacity: 0.5; font-size: 0.8em; padding-left: 0.15em; }
 .text .nl.ok { opacity: 0.35; }
-.blurred .text { filter: blur(3px); opacity: 0.6; }
+.paused .text p.done { opacity: 1; }
+/* While paused, what you've typed stays sharp and what's ahead is blurred. */
+.paused .text p.todo,
+.paused .text p.cur span:not(.ok):not(.bad) {
+  color: transparent;
+  text-shadow: 0 0 0.35em var(--untyped);
+  transition: color 0.2s, text-shadow 0.2s;
+  user-select: none;
+}
 .caret {
   position: absolute; left: 0; top: 0; width: 2px; border-radius: 1px;
   background: var(--accent);
@@ -112,16 +120,18 @@ body.typing.fade .hints { opacity: 0.12; }
   animation: blink 1s step-end infinite;
 }
 body.typing .caret { animation: none; }
-.blurred .caret { opacity: 0; }
+.paused .caret { animation: none; opacity: 0.5; }
 @keyframes blink { 50% { opacity: 0; } }
 .text.shake { animation: shake 0.18s; }
 @keyframes shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 
 .focus-hint {
-  position: absolute; left: 0; right: 0; top: 45%; text-align: center;
-  color: var(--ink); pointer-events: none; display: none; font-size: 15px;
+  position: absolute; left: 50%; bottom: 44px; transform: translateX(-50%);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 14px; color: var(--ink-2); font-size: 12px; white-space: nowrap;
+  cursor: pointer; display: none;
 }
-.blurred .focus-hint { display: block; }
+.paused .focus-hint { display: block; }
 #input { position: absolute; opacity: 0; left: -9999px; width: 1px; height: 1px; }
 
 .hints { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; margin-top: 10px; color: var(--muted); font-size: 12px; transition: opacity 0.4s; }

@@ -99,6 +99,7 @@
   let idx, text, paraStarts, para; // current chapter
   let spans = []; // spans of the current paragraph, indexed from paraStarts[para]
   let lastKey = 0;
+  let paused = false;
   const session = { ok: 0, bad: 0, ms: 0 };
 
   const textEl = $("text"), caretEl = $("caret"), scroller = $("scroller"), input = $("input");
@@ -157,7 +158,8 @@
     const pos = Math.min(c.pos, text.length);
     const before = caretEl.offsetTop - scroller.scrollTop;
     para = paraOf(pos);
-    const from = Math.max(0, para - 3), to = Math.min(paraStarts.length - 1, para + 4);
+    // While paused, render the whole chapter so far so it can be re-read.
+    const from = paused ? 0 : Math.max(0, para - 3), to = Math.min(paraStarts.length - 1, para + 4);
     let html = "";
     for (let p = from; p <= to; p++) {
       if (p !== para) { html += plainPara(p, p < para); continue; }
@@ -317,13 +319,27 @@
     } else if (e.key === "Escape") input.blur();
     else if (e.key === "Tab") e.preventDefault();
   });
-  input.addEventListener("blur", () => $("view-type").classList.add("blurred"));
-  input.addEventListener("focus", () => $("view-type").classList.remove("blurred"));
-  scroller.addEventListener("click", () => input.focus());
+  function setPaused(p) {
+    if (paused === p) return;
+    paused = p;
+    $("view-type").classList.toggle("paused", p);
+    if (p) document.body.classList.remove("typing");
+    if (view === "type" && idx !== undefined) render();
+  }
+  input.addEventListener("blur", () => setPaused(true));
+  input.addEventListener("focus", () => setPaused(false));
+  // Clicking resumes, unless you're selecting text to re-read it.
+  scroller.addEventListener("click", () => { if (!getSelection().toString()) input.focus(); });
   $("focus-hint").addEventListener("click", () => input.focus());
+  const SCROLL_KEYS = { ArrowUp: -0.15, ArrowDown: 0.15, PageUp: -0.8, PageDown: 0.8 };
   document.addEventListener("keydown", (e) => {
     if (view !== "type" || document.activeElement === input || e.metaKey || e.ctrlKey) return;
-    if (e.key.length === 1 || e.key === "Enter") input.focus();
+    if (SCROLL_KEYS[e.key]) {
+      e.preventDefault();
+      // Arrows repeat while held, and repeated smooth scrolls cancel each other out.
+      const smooth = e.key.startsWith("Page") ? "smooth" : "instant";
+      scroller.scrollBy({ top: SCROLL_KEYS[e.key] * scroller.clientHeight, behavior: smooth });
+    } else if (e.key.length === 1 || e.key === "Enter") input.focus();
   });
   $("done-next").addEventListener("click", nextChapter);
   $("restart-chapter").addEventListener("click", () => {
